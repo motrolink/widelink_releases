@@ -1,0 +1,76 @@
+name: Auto Release on Version Push
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'V*/**'
+
+permissions:
+  contents: write
+
+jobs:
+  create-releases:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect and create releases
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Function to check if release exists
+          release_exists() {
+            gh release view "$1" &>/dev/null
+            return $?
+          }
+
+          # Find all version directories (V*)
+          for version_dir in V*/; do
+            if [ -d "$version_dir" ]; then
+              # Remove trailing slash
+              version="${version_dir%/}"
+
+              # Check if required files exist
+              changelog_file="${version_dir}CHANGELOG.md"
+              elf_file="${version_dir}final_implementation.elf"
+
+              if [ ! -f "$changelog_file" ]; then
+                echo "⚠️  Skipping $version: CHANGELOG.md not found"
+                continue
+              fi
+
+              if [ ! -f "$elf_file" ]; then
+                echo "⚠️  Skipping $version: final_implementation.elf not found"
+                continue
+              fi
+
+              # Check if release already exists
+              if release_exists "$version"; then
+                echo "ℹ️  Release $version already exists, skipping..."
+                continue
+              fi
+
+              echo "🚀 Creating release for $version..."
+
+              # Create the release with changelog as body
+              gh release create "$version" \
+                --title "$version" \
+                --notes-file "$changelog_file" \
+                "$elf_file"
+
+              if [ $? -eq 0 ]; then
+                echo "✅ Successfully created release $version"
+              else
+                echo "❌ Failed to create release $version"
+                exit 1
+              fi
+            fi
+          done
+
+          echo "🎉 All releases processed successfully!"
