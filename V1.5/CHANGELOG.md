@@ -1,0 +1,1 @@
+- Melhorias no sistema de standby
