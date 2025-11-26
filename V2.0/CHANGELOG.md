@@ -1,0 +1,4 @@
+- Melhoria geral no sistema de standby
+- Novo método manual de wakeup
+- Melhoria na detecção de PIDs suportados
+- Melhorias gerais na performance
