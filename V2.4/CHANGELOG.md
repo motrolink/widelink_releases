@@ -1,0 +1,1 @@
+- Melhorias no sistema de detecção de standby
